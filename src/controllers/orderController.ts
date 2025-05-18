@@ -3,25 +3,21 @@ import orderService from "../services/orderService";
 import { Order } from "../models/Order";
 
 interface OrderParams {
-  orderId: string;
+  order_id: number;
 }
 
 export const getAllOrders = async (req: Request, res: Response): Promise<void> => {
   try {
-    const {
-      customerId,
-      status,
-      orderDate,
-      totalAmount,
-      sortBy,
-      order,
-    } = req.query;
+    const { order_id, customer_id, status, order_date, total_amount, sortBy, order } = req.query;
 
+    const orderIdNum = Number(order_id);
+    const customerIdNum = Number(customer_id);
     const filters = {
-      customerId: customerId ? Number(customerId) : undefined,
-      status: status as string | undefined,
-      orderDate: orderDate as string | undefined, // Format: 'YYYY-MM-DD'
-      totalAmount: totalAmount ? Number(totalAmount) : undefined,
+        order_id: !isNaN(orderIdNum) ? orderIdNum : undefined,
+        customer_id: !isNaN(customerIdNum) ? customerIdNum : undefined,
+        status: status as string | undefined,
+        order_date: order_date as string | undefined,
+        total_amount: total_amount ? Number(total_amount) : undefined,
     };
 
     const sortOptions = {
@@ -39,13 +35,13 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
 
 
 const getOneOrder = async (req: Request<OrderParams>, res: Response): Promise<void> => {
-    const { orderId } = req.params;
+    const { order_id } = req.params;
     try {
-        const order = await orderService.getOneOrder(orderId);
+        const order = await orderService.getOneOrder(Number(order_id));
         res.status(200).json(order);
     } catch (error) {
         console.log(error);
-        res.status(500).send(`Failed to fetch orderId ${orderId}`);
+        res.status(500).send(`Failed to fetch order_id ${order_id}`);
     }
 };
 
@@ -81,18 +77,18 @@ const updateOneOrder = async (req: Request<{}, {}, Order>, res: Response): Promi
 };
 
 const deleteOneOrder = async (req: Request<OrderParams>, res: Response): Promise<void> => {
-    const { orderId } = req.params;
+    const { order_id } = req.params;
     
     try {
-        const deleted = await orderService.deleteOneOrder(orderId);
+        const deleted = await orderService.deleteOneOrder(order_id);
         if (deleted.affectedRows > 0) {
-            res.status(202).send(`Order ${orderId} deleted successfully`);
+            res.status(202).send(`Order ${order_id} deleted successfully`);
         } else {
-            res.status(404).send(`Order ${orderId} not found`);
+            res.status(404).send(`Order ${order_id} not found`);
         }
     } catch (error) {
         console.log(error);
-        res.status(500).send(`Failed to delete order with ID ${orderId}`)
+        res.status(500).send(`Failed to delete order with ID ${order_id}`)
     }
 
 };

@@ -5,6 +5,7 @@ import { Order } from '../models/Order';
 type OrderRow = Order & RowDataPacket;
 
 interface Filters {
+  order_id?: number;
   customer_id?: number;
   status?: string;
   order_date?: string;
@@ -16,7 +17,7 @@ interface SortOptions {
   order: 'asc' | 'desc';
 }
 
-const ALLOWED_SORT_FIELDS = ['orderDate', 'total_amount', 'status', 'customerId'];
+const ALLOWED_SORT_FIELDS = ['order_date', 'total_amount', 'status', 'customer_id'];
 
 export const getAllOrders = async (
   filters: Filters,
@@ -27,6 +28,11 @@ export const getAllOrders = async (
   const conditions: string[] = [];
 
   // Dynamic WHERE clauses
+  if (filters.order_id !== undefined) {
+    conditions.push('order_id = ?');
+    params.push(filters.order_id);
+  }
+
   if (filters.customer_id !== undefined) {
     conditions.push('customer_id = ?');
     params.push(filters.customer_id);
@@ -61,11 +67,10 @@ export const getAllOrders = async (
 };
 
 
-
-const getOneOrder = async (orderId: string): Promise<Order | undefined> => {
+const getOneOrder = async (order_id: number): Promise<Order | undefined> => {
   const [rows] = await db.query<OrderRow[]>(
     'SELECT * FROM orders WHERE order_id = ?',
-    [orderId]
+    [order_id]
   );
   return rows[0];
 };
@@ -76,7 +81,7 @@ const createOneOrder = async (newOrder: Order): Promise<Order | undefined> => {
      VALUES (?, ?, ?, ?)`,
     [newOrder.customer_id, newOrder.order_date, newOrder.status, newOrder.total_amount]
   );
-  return getOneOrder(result.insertId.toString());
+  return getOneOrder(result.insertId);
 };
 
 const updateOneOrder = async (updatedOrder: Partial<Order>): Promise<Order | undefined> => {
@@ -91,10 +96,10 @@ const updateOneOrder = async (updatedOrder: Partial<Order>): Promise<Order | und
   return getOneOrder(updatedOrder.order_id!);
 };
 
-const deleteOneOrder = async (orderId: string): Promise<ResultSetHeader> => {
+const deleteOneOrder = async (order_id: number): Promise<ResultSetHeader> => {
   const [result] = await db.query<ResultSetHeader>(
     'DELETE FROM orders WHERE order_id = ?',
-    [orderId]
+    [order_id]
   );
   return result;
 };

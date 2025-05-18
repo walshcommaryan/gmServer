@@ -2,7 +2,7 @@ export const ORDER_STATUSES = ['PENDING', 'SHIPPED', 'DELIVERED', 'CANCELLED'] a
 export type OrderStatus = typeof ORDER_STATUSES[number];
 
 export interface Order {
-  order_id: string;
+  order_id: number;
   customer_id: string;
   order_date: Date;
   status: OrderStatus;

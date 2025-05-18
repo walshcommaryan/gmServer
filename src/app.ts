@@ -1,13 +1,20 @@
-import express, { Application }  from "express"
-import v1BakeryRouter from "./v1/routes/routes";
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import orderRoutes from './v1/routes/orderRoutes';
+import authRoutes from './v1/routes/authRoutes';
 
-const app: Application = express();
-const PORT: number = parseInt(process.env.PORT as string, 10) || 2000;
+const app = express();
 
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+}));
 app.use(express.json());
+app.use(cookieParser());
 
-app.use("/api/v1/bakery", v1BakeryRouter);
+app.use('/api/v1/orders', orderRoutes);
+app.use('/api/v1/auth', authRoutes);
 
-app.listen(PORT, () => {
-    console.log(`API is listening on port ${PORT}`);
-});
+const PORT = process.env.PORT || 2000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
