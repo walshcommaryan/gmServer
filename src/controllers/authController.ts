@@ -4,20 +4,41 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from '../database/database';
 
-const register = async (req: Request, res: Response) => {
-  const { first_name, last_name, email, phone, password } = req.body;
-  try {
-    const hashed = await bcrypt.hash(password, 10);
-    await db.query(
-      'INSERT INTO customers (first_name, last_name, email, phone, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-      [first_name, last_name, email, phone, hashed]
-    );
-    res.sendStatus(201);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error registering user');
-  }
+export const register = async (req: Request, res: Response) => {
+    const { first_name, last_name, email, password, phone } = req.body;
+
+    try {
+        const hashed = await bcrypt.hash(password, 10);
+        const phoneIfNull = phone ? phone : null;
+
+        // Save the user to the database
+        const [result]: any = await db.query(
+            'INSERT INTO customers (first_name, last_name, email, phone, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+            [first_name, last_name, email, phoneIfNull, hashed]
+        );
+
+        const newCustomerId = result.insertId;
+
+        const token = jwt.sign(
+            { customer_id: newCustomerId },
+            process.env.JWT_SECRET!,
+            { expiresIn: '1d' }
+        );
+
+        // Set cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+        });
+
+        res.status(201).send({ message: 'Registered and logged in' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error registering user');
+    }
 };
+
 
 export const login = async (
   req: Request,
@@ -61,6 +82,24 @@ export const login = async (
   }
 };
 
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+    try {
+        res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        });
+        res.send({ message: 'Logged out' });
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+};
+
 export const getMe = async (
   req: Request,
   res: Response,
@@ -87,4 +126,5 @@ export default {
   register,
   login,
   getMe,
+  logout,
 };
