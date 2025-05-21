@@ -29,7 +29,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'none',
         });
         res.status(201).send({ message: 'Registered and logged in' });
     }
@@ -57,7 +57,7 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'none',
         });
         res.send({ message: 'Logged in' });
     }
@@ -72,7 +72,7 @@ const logout = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'none',
         });
         res.send({ message: 'Logged out' });
     }

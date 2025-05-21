@@ -28,7 +28,7 @@ export const register = async (req: Request, res: Response) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'none',
         });
 
         res.status(201).send({ message: 'Registered and logged in' });
@@ -71,7 +71,7 @@ export const login = async (
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'none',
     });
 
     res.send({ message: 'Logged in' });
@@ -90,7 +90,7 @@ export const logout = async (
         res.clearCookie('token', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: 'none',
         });
         res.send({ message: 'Logged out' });
     } catch (err) {
