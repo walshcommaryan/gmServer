@@ -13,6 +13,7 @@ const orderRoutes_1 = __importDefault(require("./v1/routes/orderRoutes"));
 const cartRoutes_1 = __importDefault(require("./v1/routes/cartRoutes"));
 const notificationRoutes_1 = __importDefault(require("./v1/routes/notificationRoutes"));
 const productRoutes_1 = __importDefault(require("./v1/routes/productRoutes"));
+const healthRoutes_1 = __importDefault(require("./v1/routes/healthRoutes"));
 const app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || '2000', 10);
 app.use((0, cors_1.default)({
@@ -26,6 +27,7 @@ app.use('/api/v1/orders', orderRoutes_1.default);
 app.use('/api/v1/cart', cartRoutes_1.default);
 app.use('/api/v1/notification', notificationRoutes_1.default);
 app.use('/api/v1/products', productRoutes_1.default);
+app.use('/api/v1/health', healthRoutes_1.default);
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
