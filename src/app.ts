@@ -26,6 +26,10 @@ app.use('/api/v1/cart', cartRoutes);
 app.use('/api/v1/notification', notificationRoutes);
 app.use('/api/v1/products', productRoutes);
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
