@@ -15,10 +15,24 @@ import healthRoutes from './v1/routes/healthRoutes';
 const app = express();
 const PORT = parseInt(process.env.PORT || '2000', 10);
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://gmpetitcafe.cloud',
+  'https://api.gmpetitcafe.cloud',
+];
+
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, origin);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
+
+
 app.use(express.json());
 app.use(cookieParser());
 
