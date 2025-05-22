@@ -21,6 +21,10 @@ const allowedOrigins = [
     'https://gmpetitcafe.com',
     'https://www.gmpetitcafe.com',
 ];
+app.use((req, res, next) => {
+    console.log('Origin:', req.headers.origin);
+    next();
+});
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
         // Debug log to see origin on requests
