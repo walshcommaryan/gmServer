@@ -21,11 +21,25 @@ const allowedOrigins = [
   'https://api.gmpetitcafe.cloud',
 ];
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://gmpetitcafe.cloud',
+  'https://api.gmpetitcafe.cloud',
+];
+
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, origin);
+  origin: (origin, callback) => {
+    // Debug log to see origin on requests
+    console.log('CORS origin:', origin);
+
+    // Allow requests with no origin (like Postman or server-to-server)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      // Allowed origin
+      callback(null, true);
     } else {
+      // Not allowed
       callback(new Error('Not allowed by CORS'));
     }
   },
