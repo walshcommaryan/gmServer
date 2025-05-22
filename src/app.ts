@@ -16,10 +16,11 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '2000', 10);
 
 const allowedOrigins = [
-  'http://localhost:3000',
-  'https://gmpetitcafe.cloud',
-  'https://api.gmpetitcafe.cloud',
+  'http://localhost:3000',         
+  'https://gmpetitcafe.com',      
+  'https://www.gmpetitcafe.com',
 ];
+
 
 app.use(cors({
   origin: (origin, callback) => {

@@ -16,8 +16,27 @@ const productRoutes_1 = __importDefault(require("./v1/routes/productRoutes"));
 const healthRoutes_1 = __importDefault(require("./v1/routes/healthRoutes"));
 const app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || '2000', 10);
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://gmpetitcafe.com',
+    'https://www.gmpetitcafe.com',
+];
 app.use((0, cors_1.default)({
-    origin: 'http://localhost:3000',
+    origin: (origin, callback) => {
+        // Debug log to see origin on requests
+        console.log('CORS origin:', origin);
+        // Allow requests with no origin (like Postman or server-to-server)
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            // Allowed origin
+            callback(null, true);
+        }
+        else {
+            // Not allowed
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
 }));
 app.use(express_1.default.json());
