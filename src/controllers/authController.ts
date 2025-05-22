@@ -65,7 +65,7 @@ export const login = async (
     const token = jwt.sign(
       { customer_id: customer.customer_id },
       process.env.JWT_SECRET!,
-      { expiresIn: '1h' }
+      { expiresIn: '1d' }
     );
 
     res.cookie('token', token, {
