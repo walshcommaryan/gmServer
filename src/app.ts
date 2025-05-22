@@ -21,12 +21,6 @@ const allowedOrigins = [
   'https://api.gmpetitcafe.cloud',
 ];
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://gmpetitcafe.cloud',
-  'https://api.gmpetitcafe.cloud',
-];
-
 app.use(cors({
   origin: (origin, callback) => {
     // Debug log to see origin on requests
