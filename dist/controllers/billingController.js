@@ -8,14 +8,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllProducts = void 0;
-const database_1 = __importDefault(require("../database/database"));
-const getAllProducts = () => __awaiter(void 0, void 0, void 0, function* () {
-    const [rows] = yield database_1.default.query('SELECT * FROM products');
-    return rows;
+const billingService = require('../services/billingService.js');
+const createCheckoutSession = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const paymentLink = yield billingService.createCheckoutSession(req.body);
+        res.status(200).json({ url: paymentLink.url });
+    }
+    catch (error) {
+        console.error('Error creating Square payment link:', error);
+        res.status(500).json({ error: 'Failed to create payment link' });
+    }
 });
-exports.getAllProducts = getAllProducts;
+exports.default = {
+    createCheckoutSession,
+};

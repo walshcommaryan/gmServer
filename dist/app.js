@@ -14,6 +14,7 @@ const cartRoutes_1 = __importDefault(require("./v1/routes/cartRoutes"));
 const notificationRoutes_1 = __importDefault(require("./v1/routes/notificationRoutes"));
 const productRoutes_1 = __importDefault(require("./v1/routes/productRoutes"));
 const healthRoutes_1 = __importDefault(require("./v1/routes/healthRoutes"));
+const billingRoutes_1 = __importDefault(require("./v1/routes/billingRoutes"));
 const app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || '2000', 10);
 const allowedOrigins = [
@@ -22,14 +23,14 @@ const allowedOrigins = [
     'https://www.gmpetitcafe.com',
 ];
 app.use((req, res, next) => {
-    console.log('Origin:', req.headers.origin);
+    // FOR DEBUGGING ORIGIN
+    // console.log('Origin:', req.headers.origin);
+    // console.log(`Incoming request: ${req.method} ${req.originalUrl}`);
     next();
 });
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
-        // Debug log to see origin on requests
-        console.log('CORS origin:', origin);
-        // Allow requests with no origin (like Postman or server-to-server)
+        // Allow requests with no origin
         if (!origin)
             return callback(null, true);
         if (allowedOrigins.includes(origin)) {
@@ -37,7 +38,6 @@ app.use((0, cors_1.default)({
             callback(null, true);
         }
         else {
-            // Not allowed
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -51,6 +51,7 @@ app.use('/api/v1/cart', cartRoutes_1.default);
 app.use('/api/v1/notification', notificationRoutes_1.default);
 app.use('/api/v1/products', productRoutes_1.default);
 app.use('/api/v1/health', healthRoutes_1.default);
+app.use('/api/v1/billing', billingRoutes_1.default);
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

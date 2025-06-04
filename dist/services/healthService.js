@@ -12,9 +12,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const database_1 = __importDefault(require("../database/database")); // your existing DB connection/pool
+const database_1 = __importDefault(require("../database/database"));
 const testDbConnection = () => __awaiter(void 0, void 0, void 0, function* () {
-    // Simple query to check DB connectivity
     yield database_1.default.query('SELECT 1');
 });
 exports.default = { testDbConnection };

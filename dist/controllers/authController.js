@@ -25,7 +25,6 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const [result] = yield database_1.default.query('INSERT INTO customers (first_name, last_name, email, phone, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [first_name, last_name, email, phoneIfNull, hashed]);
         const newCustomerId = result.insertId;
         const token = jsonwebtoken_1.default.sign({ customer_id: newCustomerId }, process.env.JWT_SECRET, { expiresIn: '1d' });
-        // Set cookie
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -53,7 +52,7 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
             res.status(401).send('Invalid credentials');
             return;
         }
-        const token = jsonwebtoken_1.default.sign({ customer_id: customer.customer_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jsonwebtoken_1.default.sign({ customer_id: customer.customer_id }, process.env.JWT_SECRET, { expiresIn: '1d' });
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -63,7 +62,7 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
     }
     catch (err) {
         console.error(err);
-        next(err); // Pass errors to Express error handler
+        next(err);
     }
 });
 exports.login = login;

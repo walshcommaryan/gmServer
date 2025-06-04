@@ -24,7 +24,6 @@ export const register = async (req: Request, res: Response) => {
             { expiresIn: '1d' }
         );
 
-        // Set cookie
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -77,7 +76,7 @@ export const login = async (
     res.send({ message: 'Logged in' });
   } catch (err) {
     console.error(err);
-    next(err); // Pass errors to Express error handler
+    next(err);
   }
 };
 

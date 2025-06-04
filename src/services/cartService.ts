@@ -23,7 +23,7 @@ export const getCartByCustomerId = async (customerId: number): Promise<Cart[] | 
   return rows;
 };
 
-// Ensure an active cart exists or create one
+// Ensure an active cart exists, otherwise create one
 export const getOrCreateActiveCart = async (customerId: number) => {
   const [existingCart] = await db.query<CartRow[]>(
     'SELECT cart_id FROM carts WHERE customer_id = ? AND is_active = TRUE',
@@ -39,7 +39,6 @@ export const getOrCreateActiveCart = async (customerId: number) => {
     [customerId]
   );
   
-  console.log("Hello", newCart);
   return newCart.insertId;
 };
 

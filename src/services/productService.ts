@@ -1,4 +1,3 @@
-// src/services/productService.ts
 import pool from '../database/database';
 
 interface Product {

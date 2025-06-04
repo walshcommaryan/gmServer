@@ -27,7 +27,6 @@ export const getAllOrders = async (
   const params: any[] = [];
   const conditions: string[] = [];
 
-  // Dynamic WHERE clauses
   if (filters.order_id !== undefined) {
     conditions.push('order_id = ?');
     params.push(filters.order_id);
@@ -57,7 +56,6 @@ export const getAllOrders = async (
     query += ' WHERE ' + conditions.join(' AND ');
   }
 
-  // Add ORDER BY
   if (filters && sortOptions.sortBy && ALLOWED_SORT_FIELDS.includes(sortOptions.sortBy)) {
     query += ` ORDER BY ${sortOptions.sortBy} ${sortOptions.order.toUpperCase()}`;
   }

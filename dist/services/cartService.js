@@ -29,14 +29,13 @@ const getCartByCustomerId = (customerId) => __awaiter(void 0, void 0, void 0, fu
     return rows;
 });
 exports.getCartByCustomerId = getCartByCustomerId;
-// Ensure an active cart exists or create one
+// Ensure an active cart exists, otherwise create one
 const getOrCreateActiveCart = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
     const [existingCart] = yield database_1.default.query('SELECT cart_id FROM carts WHERE customer_id = ? AND is_active = TRUE', [customerId]);
     if (existingCart.length > 0) {
         return existingCart[0].cart_id;
     }
     const [newCart] = yield database_1.default.query('INSERT INTO carts (customer_id) VALUES (?)', [customerId]);
-    console.log("Hello", newCart);
     return newCart.insertId;
 });
 exports.getOrCreateActiveCart = getOrCreateActiveCart;
