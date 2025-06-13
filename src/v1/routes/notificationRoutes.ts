@@ -1,6 +1,6 @@
-import express from 'express';
-import rateLimit from 'express-rate-limit';
-import notificationController from '../../controllers/notificationController';
+import express from "express";
+import rateLimit from "express-rate-limit";
+import notificationController from "../../controllers/notificationController";
 
 const router = express.Router();
 
@@ -10,6 +10,6 @@ const contactFormLimiter = rateLimit({
   message: "Too many submissions, please try again later.",
 });
 
-router.post('/email', contactFormLimiter, notificationController.sendEmail);
+router.post("/email", contactFormLimiter, notificationController.sendEmail);
 
 export default router;

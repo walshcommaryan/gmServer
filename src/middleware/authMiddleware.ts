@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 
 interface JwtPayload {
   customer_id: number;
@@ -16,11 +16,11 @@ declare global {
 export const authenticate = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   const token = req.cookies.token;
   if (!token) {
-    res.status(401).send('No token provided');
+    res.status(401).send("No token provided");
     return;
   }
 
@@ -30,13 +30,11 @@ export const authenticate = async (
     next();
   } catch (err) {
     console.error(err);
-    res.status(403).send('Invalid token');
+    res.status(403).send("Invalid token");
     return;
   }
 };
 
-
-
 export default {
-    authenticate,
-}
+  authenticate,
+};

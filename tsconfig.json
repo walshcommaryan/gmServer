@@ -7,11 +7,14 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./src",
-    "typeRoots": ["./node_modules/@types", "./server/types"],
+    "rootDir": "./",
     "moduleResolution": "node16",
     "allowJs": true,
-    "checkJs": false
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@types/*": ["server/types/*"]
+    }
   },
-  "include": ["src/**/*.ts", "src/services/billingService.js"]  // ✅ Include the JS service file
+  "include": ["src", "server/types"]
 }

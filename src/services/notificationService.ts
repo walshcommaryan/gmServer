@@ -1,5 +1,5 @@
-import db from '../database/database';
-import nodemailer from 'nodemailer';
+import db from "../database/database";
+import nodemailer from "nodemailer";
 
 type ContactSubmission = {
   email: string;
@@ -8,17 +8,19 @@ type ContactSubmission = {
   message: string;
 };
 
-const saveContactSubmission = async (data: ContactSubmission): Promise<void> => {
+const saveContactSubmission = async (
+  data: ContactSubmission,
+): Promise<void> => {
   const { email, phone, subject, message } = data;
   await db.query(
-    'INSERT INTO contact_submissions (email, phone, subject, message) VALUES (?, ?, ?, ?)',
-    [email, phone || '', subject, message]
+    "INSERT INTO contact_submissions (email, phone, subject, message) VALUES (?, ?, ?, ?)",
+    [email, phone || "", subject, message],
   );
 };
 
 const sendEmail = async (data: ContactSubmission): Promise<void> => {
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: "gmail",
     auth: {
       user: process.env.MAIL_USER,
       pass: process.env.MAIL_PASS,
@@ -31,7 +33,7 @@ const sendEmail = async (data: ContactSubmission): Promise<void> => {
     subject: `New Contact Form Submission: ${data.subject}`,
     text: `
         From: ${data.email}
-        Phone: ${data.phone || 'N/A'}
+        Phone: ${data.phone || "N/A"}
         Message:
         ${data.message}
     `,

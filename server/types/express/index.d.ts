@@ -1,4 +1,11 @@
 import { JwtPayload } from 'jsonwebtoken';
+import 'express-session';
+
+declare module 'express-session' {
+  interface SessionData {
+    paymentConfirmed?: boolean;
+  }
+}
 
 declare global {
   namespace Express {

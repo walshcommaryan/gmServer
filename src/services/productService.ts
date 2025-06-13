@@ -1,4 +1,4 @@
-import pool from '../database/database';
+import pool from "../database/database";
 
 interface Product {
   product_id: number;
@@ -9,8 +9,7 @@ interface Product {
   created_at: string;
 }
 
-
 export const getAllProducts = async (): Promise<Product[]> => {
-  const [rows] = await pool.query('SELECT * FROM products');
+  const [rows] = await pool.query("SELECT * FROM products");
   return rows as Product[];
 };
