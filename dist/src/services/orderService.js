@@ -77,6 +77,7 @@ const createOneOrder = (newOrder) => __awaiter(void 0, void 0, void 0, function*
         console.error("❌ Insert failed: No insertId returned.");
         return undefined;
     }
+    return Object.assign(Object.assign({}, newOrder), { order_id: result.insertId });
 });
 const updateOneOrder = (updatedOrder) => __awaiter(void 0, void 0, void 0, function* () {
     const orderId = updatedOrder.order_id;
@@ -113,7 +114,6 @@ const updateOrderItems = (orderId, items) => __awaiter(void 0, void 0, void 0, f
         orderId,
     ]);
 });
-// Likely in src/services/orderService.ts
 const getMostRecentPaidOrderForCustomer = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
     const [rows] = yield database_1.default.query(`SELECT * FROM orders
      WHERE customer_id = ? AND status = 'PAID'
@@ -159,6 +159,6 @@ exports.default = {
     getMostRecentPaidOrderForCustomer,
     getAllPaidOrdersByCustomer,
     archiveCartToOrderItems,
-    getItemsByOrderId
+    getItemsByOrderId,
 };
 //# sourceMappingURL=orderService.js.map

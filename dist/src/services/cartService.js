@@ -91,9 +91,7 @@ const deactivateCart = (cartId) => __awaiter(void 0, void 0, void 0, function* (
 });
 exports.deactivateCart = deactivateCart;
 const createNewActiveCart = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
-    // First, deactivate existing active cart if any
     yield database_1.default.query(`UPDATE carts SET is_active = 0 WHERE customer_id = ? AND is_active = 1`, [customerId]);
-    // Then insert new cart
     const [result] = yield database_1.default.query(`INSERT INTO carts (customer_id, is_active, created_at, updated_at)
      VALUES (?, 1, NOW(), NOW())`, [customerId]);
     return result.insertId;

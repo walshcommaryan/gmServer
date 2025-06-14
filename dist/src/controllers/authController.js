@@ -141,6 +141,6 @@ exports.default = {
     login: exports.login,
     getMe: exports.getMe,
     logout: exports.logout,
-    refreshToken: exports.refreshToken
+    refreshToken: exports.refreshToken,
 };
 //# sourceMappingURL=authController.js.map

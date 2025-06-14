@@ -110,6 +110,11 @@ const createOneOrder = async (newOrder: Order): Promise<Order | undefined> => {
     console.error("❌ Insert failed: No insertId returned.");
     return undefined;
   }
+
+  return {
+    ...newOrder,
+    order_id: result.insertId, // attach the generated ID
+  };
 };
 
 const updateOneOrder = async (

@@ -246,6 +246,6 @@ exports.default = {
     getLatestPaidOrder,
     resetPaymentConfirmed,
     getOrderHistory,
-    getOrderItems
+    getOrderItems,
 };
 //# sourceMappingURL=orderController.js.map
