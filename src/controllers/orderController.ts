@@ -9,6 +9,8 @@ import {
   deactivateCart,
   createNewActiveCart,
 } from "../services/cartService";
+import customerService from "../services/customerService";
+import notificationService from "../services/notificationService";
 
 interface OrderParams {
   order_id: number;
@@ -182,7 +184,33 @@ const handlePaymentConfirm = async (
     // 7. Fresh cart for customer
     await createNewActiveCart(customerId);
 
-    // 8. Save session
+    // 8. Send Order summary to customer
+    const items = await orderService.getItemsByOrderId(pendingOrder.order_id);
+    const customer = await customerService.getCustomerById(customerId);
+
+    await notificationService.sendOrderSummaryEmail(
+      customer.email,
+      customer.name,
+      pendingOrder.order_id,
+      items,
+      pendingOrder.total_amount,
+      pendingOrder.location,
+      pendingOrder.pickup_date
+    );
+
+    // 9. Send incoming order email to bakery staff
+    await notificationService.sendIncomingOrderEmail(
+      process.env.BUSINESS_OWNER_EMAIL || process.env.MAIL_USER || "ryw246@gmail.com",
+      customer.name,
+      pendingOrder.order_id,
+      items,
+      Number(pendingOrder.total_amount),
+      pendingOrder.location,
+      pendingOrder.pickup_date
+    );
+
+
+    // 10. Save session
     req.session.paymentConfirmed = true;
     await new Promise<void>((resolve, reject) => {
       req.session.save((err) => {

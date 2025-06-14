@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllOrders = void 0;
 const orderService_1 = __importDefault(require("../services/orderService"));
 const cartService_1 = require("../services/cartService");
+const customerService_1 = __importDefault(require("../services/customerService"));
+const notificationService_1 = __importDefault(require("../services/notificationService"));
 const getAllOrders = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { order_id, customer_id, status, order_date, total_amount, sortBy, order, } = req.query;
@@ -133,7 +135,13 @@ const handlePaymentConfirm = (req, res) => __awaiter(void 0, void 0, void 0, fun
         yield (0, cartService_1.deactivateCart)(cart.cart_id);
         // 7. Fresh cart for customer
         yield (0, cartService_1.createNewActiveCart)(customerId);
-        // 8. Save session
+        // 8. Send Order summary to customer
+        const items = yield orderService_1.default.getItemsByOrderId(pendingOrder.order_id);
+        const customer = yield customerService_1.default.getCustomerById(customerId);
+        yield notificationService_1.default.sendOrderSummaryEmail(customer.email, customer.name, pendingOrder.order_id, items, pendingOrder.total_amount, pendingOrder.location, pendingOrder.pickup_date);
+        // 9. Send incoming order email to bakery staff
+        yield notificationService_1.default.sendIncomingOrderEmail(process.env.BUSINESS_OWNER_EMAIL || process.env.MAIL_USER || "ryw246@gmail.com", customer.name, pendingOrder.order_id, items, Number(pendingOrder.total_amount), pendingOrder.location, pendingOrder.pickup_date);
+        // 10. Save session
         req.session.paymentConfirmed = true;
         yield new Promise((resolve, reject) => {
             req.session.save((err) => {

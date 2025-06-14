@@ -77,7 +77,6 @@ export const getAllOrders = async (
     params.push(filters.pickup_date);
   }
 
-
   if (conditions.length > 0) {
     query += " WHERE " + conditions.join(" AND ");
   }

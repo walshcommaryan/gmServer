@@ -70,7 +70,6 @@ const createCheckoutSession = async (
   }
 };
 
-
 export default {
   createCheckoutSession,
 };

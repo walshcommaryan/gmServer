@@ -14,7 +14,7 @@ const ioredis_1 = __importDefault(require("ioredis"));
 const connect_redis_1 = require("connect-redis");
 exports.app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || "3000", 10);
-exports.app.set('trust proxy', 1);
+exports.app.set("trust proxy", 1);
 // Redis setup
 const redisClient = new ioredis_1.default({
     host: process.env.REDIS_HOST,
