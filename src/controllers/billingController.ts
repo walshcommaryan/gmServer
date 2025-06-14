@@ -11,6 +11,9 @@ const createCheckoutSession = async (
 ): Promise<void> => {
   try {
     const customerId = req.user?.customer_id;
+    const { location, pickup_date } = req.body;
+
+    console.log("📩 req.body from client:", req.body);
 
     if (!customerId) {
       res.status(401).json({ error: "Unauthorized" });
@@ -33,21 +36,25 @@ const createCheckoutSession = async (
       status: "PENDING",
       order_date: new Date(),
       total_amount: total,
+      location,
+      pickup_date: new Date(pickup_date),
     };
 
     let pendingOrder: Order | undefined =
       await orderService.getPendingOrderForCustomer(customerId);
 
     if (pendingOrder) {
-      await orderService.updateOrderItems(pendingOrder.order_id, cartItems);
+      await orderService.updateOneOrder({
+        order_id: pendingOrder.order_id,
+        location,
+        pickup_date: new Date(pickup_date),
+      });
     } else {
       const newOrder = await orderService.createOneOrder(orderPayload);
-
       if (!newOrder) {
         res.status(500).json({ error: "Failed to create pending order" });
         return;
       }
-
       pendingOrder = newOrder;
     }
 
@@ -62,6 +69,7 @@ const createCheckoutSession = async (
     res.status(500).json({ error: "Failed to create payment link" });
   }
 };
+
 
 export default {
   createCheckoutSession,

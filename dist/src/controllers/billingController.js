@@ -19,6 +19,8 @@ const createCheckoutSession = (req, res) => __awaiter(void 0, void 0, void 0, fu
     var _a;
     try {
         const customerId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.customer_id;
+        const { location, pickup_date } = req.body;
+        console.log("📩 req.body from client:", req.body);
         if (!customerId) {
             res.status(401).json({ error: "Unauthorized" });
             return;
@@ -37,10 +39,16 @@ const createCheckoutSession = (req, res) => __awaiter(void 0, void 0, void 0, fu
             status: "PENDING",
             order_date: new Date(),
             total_amount: total,
+            location,
+            pickup_date: new Date(pickup_date),
         };
         let pendingOrder = yield orderService_1.default.getPendingOrderForCustomer(customerId);
         if (pendingOrder) {
-            yield orderService_1.default.updateOrderItems(pendingOrder.order_id, cartItems);
+            yield orderService_1.default.updateOneOrder({
+                order_id: pendingOrder.order_id,
+                location,
+                pickup_date: new Date(pickup_date),
+            });
         }
         else {
             const newOrder = yield orderService_1.default.createOneOrder(orderPayload);

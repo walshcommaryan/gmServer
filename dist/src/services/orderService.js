@@ -19,6 +19,8 @@ const ALLOWED_SORT_FIELDS = [
     "total_amount",
     "status",
     "customer_id",
+    "location",
+    "pickup_date",
 ];
 const getAllOrders = (filters, sortOptions) => __awaiter(void 0, void 0, void 0, function* () {
     let query = "SELECT * FROM orders";
@@ -44,6 +46,14 @@ const getAllOrders = (filters, sortOptions) => __awaiter(void 0, void 0, void 0,
         conditions.push("total_amount = ?");
         params.push(filters.total_amount);
     }
+    if (filters.location) {
+        conditions.push("location = ?");
+        params.push(filters.location);
+    }
+    if (filters.pickup_date) {
+        conditions.push("DATE(pickup_date) = ?");
+        params.push(filters.pickup_date);
+    }
     if (conditions.length > 0) {
         query += " WHERE " + conditions.join(" AND ");
     }
@@ -59,19 +69,21 @@ exports.getAllOrders = getAllOrders;
 const getOneOrder = (orderId) => __awaiter(void 0, void 0, void 0, function* () {
     if (typeof orderId !== "number" || isNaN(orderId)) {
         console.error("❌ getOneOrder: Invalid order_id:", orderId);
-        console.trace(); // <- Logs full stack trace
+        console.trace();
         return undefined;
     }
     const [rows] = yield database_1.default.query(`SELECT * FROM orders WHERE order_id = ?`, [orderId]);
     return rows[0];
 });
 const createOneOrder = (newOrder) => __awaiter(void 0, void 0, void 0, function* () {
-    const [result] = yield database_1.default.query(`INSERT INTO orders (customer_id, order_date, status, total_amount)
-     VALUES (?, ?, ?, ?)`, [
+    const [result] = yield database_1.default.query(`INSERT INTO orders (customer_id, order_date, status, total_amount, location, pickup_date)
+      VALUES (?, ?, ?, ?, ?, ?)`, [
         newOrder.customer_id,
         newOrder.order_date,
         newOrder.status,
         newOrder.total_amount,
+        newOrder.location,
+        newOrder.pickup_date,
     ]);
     if (!result.insertId) {
         console.error("❌ Insert failed: No insertId returned.");
@@ -87,12 +99,16 @@ const updateOneOrder = (updatedOrder) => __awaiter(void 0, void 0, void 0, funct
     }
     const [result] = yield database_1.default.query(`UPDATE orders
      SET order_date = COALESCE(?, order_date),
-         status = COALESCE(?, status),
-         total_amount = COALESCE(?, total_amount)
+      status = COALESCE(?, status),
+      total_amount = COALESCE(?, total_amount),
+      location = COALESCE(?, location),
+      pickup_date = COALESCE(?, pickup_date)
      WHERE order_id = ?`, [
         updatedOrder.order_date,
         updatedOrder.status,
         updatedOrder.total_amount,
+        updatedOrder.location,
+        updatedOrder.pickup_date,
         orderId,
     ]);
     if (result.affectedRows === 0) {
@@ -106,13 +122,6 @@ const deleteOneOrder = (order_id) => __awaiter(void 0, void 0, void 0, function*
 const getPendingOrderForCustomer = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
     const [rows] = yield database_1.default.query("SELECT * FROM orders WHERE customer_id = ? AND status = 'PENDING' ORDER BY order_date DESC LIMIT 1", [customerId]);
     return rows[0];
-});
-const updateOrderItems = (orderId, items) => __awaiter(void 0, void 0, void 0, function* () {
-    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    yield database_1.default.query(`UPDATE orders SET total_amount = ? WHERE order_id = ?`, [
-        total,
-        orderId,
-    ]);
 });
 const getMostRecentPaidOrderForCustomer = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
     const [rows] = yield database_1.default.query(`SELECT * FROM orders
@@ -155,7 +164,6 @@ exports.default = {
     updateOneOrder,
     deleteOneOrder,
     getPendingOrderForCustomer,
-    updateOrderItems,
     getMostRecentPaidOrderForCustomer,
     getAllPaidOrdersByCustomer,
     archiveCartToOrderItems,

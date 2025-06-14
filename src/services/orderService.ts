@@ -16,6 +16,8 @@ interface Filters {
   status?: string;
   order_date?: string;
   total_amount?: number;
+  location?: string;
+  pickup_date?: string;
 }
 
 interface SortOptions {
@@ -28,6 +30,8 @@ const ALLOWED_SORT_FIELDS = [
   "total_amount",
   "status",
   "customer_id",
+  "location",
+  "pickup_date",
 ];
 
 export const getAllOrders = async (
@@ -63,6 +67,17 @@ export const getAllOrders = async (
     params.push(filters.total_amount);
   }
 
+  if (filters.location) {
+    conditions.push("location = ?");
+    params.push(filters.location);
+  }
+
+  if (filters.pickup_date) {
+    conditions.push("DATE(pickup_date) = ?");
+    params.push(filters.pickup_date);
+  }
+
+
   if (conditions.length > 0) {
     query += " WHERE " + conditions.join(" AND ");
   }
@@ -82,7 +97,7 @@ export const getAllOrders = async (
 const getOneOrder = async (orderId: number): Promise<Order | undefined> => {
   if (typeof orderId !== "number" || isNaN(orderId)) {
     console.error("❌ getOneOrder: Invalid order_id:", orderId);
-    console.trace(); // <- Logs full stack trace
+    console.trace();
     return undefined;
   }
 
@@ -96,13 +111,15 @@ const getOneOrder = async (orderId: number): Promise<Order | undefined> => {
 
 const createOneOrder = async (newOrder: Order): Promise<Order | undefined> => {
   const [result] = await db.query<ResultSetHeader>(
-    `INSERT INTO orders (customer_id, order_date, status, total_amount)
-     VALUES (?, ?, ?, ?)`,
+    `INSERT INTO orders (customer_id, order_date, status, total_amount, location, pickup_date)
+      VALUES (?, ?, ?, ?, ?, ?)`,
     [
       newOrder.customer_id,
       newOrder.order_date,
       newOrder.status,
       newOrder.total_amount,
+      newOrder.location,
+      newOrder.pickup_date,
     ],
   );
 
@@ -113,7 +130,7 @@ const createOneOrder = async (newOrder: Order): Promise<Order | undefined> => {
 
   return {
     ...newOrder,
-    order_id: result.insertId, // attach the generated ID
+    order_id: result.insertId,
   };
 };
 
@@ -130,13 +147,17 @@ const updateOneOrder = async (
   const [result] = await db.query<ResultSetHeader>(
     `UPDATE orders
      SET order_date = COALESCE(?, order_date),
-         status = COALESCE(?, status),
-         total_amount = COALESCE(?, total_amount)
+      status = COALESCE(?, status),
+      total_amount = COALESCE(?, total_amount),
+      location = COALESCE(?, location),
+      pickup_date = COALESCE(?, pickup_date)
      WHERE order_id = ?`,
     [
       updatedOrder.order_date,
       updatedOrder.status,
       updatedOrder.total_amount,
+      updatedOrder.location,
+      updatedOrder.pickup_date,
       orderId,
     ],
   );
@@ -160,17 +181,6 @@ const getPendingOrderForCustomer = async (customerId: number) => {
     [customerId],
   );
   return rows[0];
-};
-
-const updateOrderItems = async (orderId: number, items: any[]) => {
-  const total = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-  await db.query(`UPDATE orders SET total_amount = ? WHERE order_id = ?`, [
-    total,
-    orderId,
-  ]);
 };
 
 const getMostRecentPaidOrderForCustomer = async (
@@ -244,7 +254,6 @@ export default {
   updateOneOrder,
   deleteOneOrder,
   getPendingOrderForCustomer,
-  updateOrderItems,
   getMostRecentPaidOrderForCustomer,
   getAllPaidOrdersByCustomer,
   archiveCartToOrderItems,
