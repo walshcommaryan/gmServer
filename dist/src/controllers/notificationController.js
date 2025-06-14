@@ -15,18 +15,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const notificationService_1 = __importDefault(require("../services/notificationService"));
 const sendEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { email, phone, subject, message } = req.body;
-        if (!email || !subject || !message) {
+        const { name, email, phone, subject, message } = req.body;
+        if (!name || !email || !subject || !message) {
             res.status(400).json({ message: "Required fields missing" });
             return;
         }
         yield notificationService_1.default.saveContactSubmission({
+            name,
             email,
             phone,
             subject,
             message,
         });
-        yield notificationService_1.default.sendEmail({ email, phone, subject, message });
+        yield notificationService_1.default.sendEmail({
+            name,
+            email,
+            phone,
+            subject,
+            message,
+        });
         res.status(200).json({ message: "Message sent successfully" });
     }
     catch (error) {

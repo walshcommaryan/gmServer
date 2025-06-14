@@ -1,11 +1,11 @@
-const { Client, Environment } = require('square/legacy');
-const crypto = require('crypto');
-require('dotenv').config(); // Only this is needed
+const { Client, Environment } = require("square/legacy");
+const crypto = require("crypto");
+require("dotenv").config(); // Only this is needed
 
 const squareClient = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment:
-    process.env.SQUARE_ENVIRONMENT === 'production'
+    process.env.SQUARE_ENVIRONMENT === "production"
       ? Environment.Production
       : Environment.Sandbox,
 });
@@ -16,7 +16,7 @@ const createCheckoutSession = async ({ items }) => {
     quantity: item.quantity.toString(),
     basePriceMoney: {
       amount: BigInt(Math.round(item.price * 100)),
-      currency: 'USD',
+      currency: "USD",
     },
   }));
 

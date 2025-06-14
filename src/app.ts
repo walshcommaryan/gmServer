@@ -10,6 +10,7 @@ import { RedisStore } from "connect-redis";
 
 export const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
+app.set('trust proxy', 1);
 
 // Redis setup
 const redisClient = new Redis({

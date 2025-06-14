@@ -2,6 +2,7 @@ import db from "../database/database";
 import nodemailer from "nodemailer";
 
 type ContactSubmission = {
+  name: string;
   email: string;
   phone?: string;
   subject: string;
@@ -11,10 +12,14 @@ type ContactSubmission = {
 const saveContactSubmission = async (
   data: ContactSubmission,
 ): Promise<void> => {
-  const { email, phone, subject, message } = data;
+  const { name, email, phone, subject, message } = data;
+
   await db.query(
-    "INSERT INTO contact_submissions (email, phone, subject, message) VALUES (?, ?, ?, ?)",
-    [email, phone || "", subject, message],
+    `
+    INSERT INTO contact_submissions (name, email, phone, subject, message)
+    VALUES (?, ?, ?, ?, ?)
+    `,
+    [name, email, phone || "", subject, message],
   );
 };
 
@@ -28,16 +33,16 @@ const sendEmail = async (data: ContactSubmission): Promise<void> => {
   });
 
   await transporter.sendMail({
-    from: `"Contact Form" <${process.env.MAIL_USER}>`,
-    to: process.env.BUSINESS_OWNER_EMAIL,
-    replyTo: data.email,
+    from: `"${data.name}" <${process.env.MAIL_USER}>`,
+    to: process.env.BUSINESS_OWNER_EMAIL || process.env.MAIL_USER,
     subject: `New Contact Form Submission: ${data.subject}`,
     text: `
-    From: ${data.email}
-    Phone: ${data.phone || "N/A"}
-    Message:
-    ${data.message}
-  `,
+        From: ${data.name} <${data.email}>
+        Phone: ${data.phone || "N/A"}
+
+        Message:
+        ${data.message}
+    `.trim(),
   });
 };
 

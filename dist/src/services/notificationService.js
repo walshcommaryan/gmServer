@@ -15,8 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const database_1 = __importDefault(require("../database/database"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const saveContactSubmission = (data) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, phone, subject, message } = data;
-    yield database_1.default.query("INSERT INTO contact_submissions (email, phone, subject, message) VALUES (?, ?, ?, ?)", [email, phone || "", subject, message]);
+    const { name, email, phone, subject, message } = data;
+    yield database_1.default.query(`
+    INSERT INTO contact_submissions (name, email, phone, subject, message)
+    VALUES (?, ?, ?, ?, ?)
+    `, [name, email, phone || "", subject, message]);
 });
 const sendEmail = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const transporter = nodemailer_1.default.createTransport({
@@ -27,15 +30,16 @@ const sendEmail = (data) => __awaiter(void 0, void 0, void 0, function* () {
         },
     });
     yield transporter.sendMail({
-        from: `"Contact Form" <${process.env.MAIL_USER}>`,
-        to: data.email,
+        from: `"${data.name}" <${process.env.MAIL_USER}>`,
+        to: process.env.BUSINESS_OWNER_EMAIL || process.env.MAIL_USER,
         subject: `New Contact Form Submission: ${data.subject}`,
         text: `
-        From: ${data.email}
+        From: ${data.name} <${data.email}>
         Phone: ${data.phone || "N/A"}
+
         Message:
         ${data.message}
-    `,
+    `.trim(),
     });
 });
 exports.default = {
