@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMe = exports.logout = exports.login = exports.register = void 0;
+exports.refreshToken = exports.getMe = exports.logout = exports.login = exports.register = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = __importDefault(require("../database/database"));
@@ -24,13 +24,21 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // Save the user to the database
         const [result] = yield database_1.default.query("INSERT INTO customers (first_name, last_name, email, phone, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())", [first_name, last_name, email, phoneIfNull, hashed]);
         const newCustomerId = result.insertId;
-        const token = jsonwebtoken_1.default.sign({ customer_id: newCustomerId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-        res.cookie("token", token, {
+        const accessToken = jsonwebtoken_1.default.sign({ customer_id: newCustomerId }, process.env.JWT_SECRET, { expiresIn: "15m" });
+        const refreshToken = jsonwebtoken_1.default.sign({ customer_id: newCustomerId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+        res
+            .cookie("token", accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "none",
-        });
-        res.status(201).send({ message: "Registered and logged in" });
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        })
+            .cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        })
+            .status(201)
+            .send({ message: "Logged in" });
     }
     catch (err) {
         console.error(err);
@@ -52,13 +60,21 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
             res.status(401).send("Invalid credentials");
             return;
         }
-        const token = jsonwebtoken_1.default.sign({ customer_id: customer.customer_id }, process.env.JWT_SECRET, { expiresIn: "1d" });
-        res.cookie("token", token, {
+        const accessToken = jsonwebtoken_1.default.sign({ customer_id: customer.customer_id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+        const refreshToken = jsonwebtoken_1.default.sign({ customer_id: customer.customer_id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+        res
+            .cookie("token", accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "none",
-        });
-        res.send({ message: "Logged in" });
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        })
+            .cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        })
+            .status(201)
+            .send({ message: "Logged in" });
     }
     catch (err) {
         console.error(err);
@@ -71,7 +87,7 @@ const logout = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         res.clearCookie("token", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "none",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         });
         res.send({ message: "Logged out" });
     }
@@ -98,10 +114,33 @@ const getMe = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getMe = getMe;
+const refreshToken = (req, res) => {
+    const token = req.cookies.refreshToken;
+    if (!token) {
+        res.status(401).send("No refresh token");
+        return;
+    }
+    try {
+        const payload = jsonwebtoken_1.default.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        const newAccessToken = jsonwebtoken_1.default.sign({ customer_id: payload.customer_id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+        res.cookie("token", newAccessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        });
+        res.json({ message: "Token refreshed" });
+    }
+    catch (err) {
+        console.error("Refresh failed", err);
+        res.status(403).send("Invalid refresh token");
+    }
+};
+exports.refreshToken = refreshToken;
 exports.default = {
     register: exports.register,
     login: exports.login,
     getMe: exports.getMe,
     logout: exports.logout,
+    refreshToken: exports.refreshToken
 };
 //# sourceMappingURL=authController.js.map

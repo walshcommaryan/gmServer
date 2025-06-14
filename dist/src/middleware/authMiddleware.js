@@ -17,22 +17,24 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const authenticate = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const token = req.cookies.token;
     if (!token) {
-        res.status(401).send("No token provided");
+        res.status(401).json({ message: "No token provided" });
         return;
     }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
-        next();
+        return next();
     }
     catch (err) {
-        console.error(err);
-        res.status(403).send("Invalid token");
+        console.error("JWT error:", err);
+        if (err.name === "TokenExpiredError") {
+            console.warn("Token expired");
+            res.status(401).json({ message: "Token expired" });
+            return;
+        }
+        res.status(403).json({ message: "Invalid token" });
         return;
     }
 });
 exports.authenticate = authenticate;
-exports.default = {
-    authenticate: exports.authenticate,
-};
 //# sourceMappingURL=authMiddleware.js.map

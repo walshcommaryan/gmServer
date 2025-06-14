@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
 import {
-  getCartByCustomerId,
+  getCartItemsByCustomerId,
   getOrCreateActiveCart,
   updateCartItem,
   mergeCartItem,
@@ -16,7 +16,7 @@ const getCart = async (req: Request, res: Response): Promise<void> => {
     res.status(401).json({ message: "Unauthorized" });
   }
   try {
-    const items = await getCartByCustomerId(customer_id!);
+    const items = await getCartItemsByCustomerId(customer_id!);
     res.json({ items });
   } catch (err) {
     console.error(err);

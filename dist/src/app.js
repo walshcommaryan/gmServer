@@ -37,9 +37,9 @@ exports.app.use((0, express_session_1.default)({
     cookie: {
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 1000 * 60 * 30,
-    }
+    },
 }));
 // CORS
 exports.app.use((0, cors_1.default)({
@@ -88,7 +88,8 @@ exports.app.use("/api/v1/billing", billingRoutes_1.default);
 redisClient.on("connect", () => console.log("🔌 Redis client connected."));
 redisClient.on("ready", () => console.log("✅ Redis client ready to use."));
 redisClient.on("error", (err) => console.error("❌ Redis error:", err));
-redisClient.ping()
+redisClient
+    .ping()
     .then((res) => {
     console.log("Redis PING response:", res);
     exports.app.listen(PORT, () => {

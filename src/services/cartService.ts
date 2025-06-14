@@ -4,10 +4,18 @@ import { Cart } from "../models/Cart";
 
 type CartRow = Cart & RowDataPacket;
 
+interface CartMetaRow extends RowDataPacket {
+  cart_id: number;
+  customer_id: number;
+  created_at: Date;
+  updated_at: Date;
+  is_active: number;
+}
+
 // Get active cart items for a customer
-export const getCartByCustomerId = async (
+export const getCartItemsByCustomerId = async (
   customerId: number,
-): Promise<Cart[] | undefined> => {
+): Promise<Cart[]> => {
   const [rows] = await db.query<CartRow[]>(
     `SELECT 
       ci.cart_item_id,
@@ -23,6 +31,17 @@ export const getCartByCustomerId = async (
   );
 
   return rows;
+};
+
+export const getActiveCartMetaByCustomerId = async (
+  customerId: number,
+): Promise<CartMetaRow | null> => {
+  const [rows] = await db.query<CartMetaRow[]>(
+    `SELECT * FROM carts WHERE customer_id = ? AND is_active = 1 ORDER BY created_at DESC LIMIT 1`,
+    [customerId],
+  );
+
+  return rows[0] || null;
 };
 
 // Ensure an active cart exists, otherwise create one
@@ -127,4 +146,28 @@ export const clearItemsInCart = async (customerId: number) => {
   );
 
   return result.affectedRows > 0;
+};
+
+export const deactivateCart = async (cartId: number): Promise<void> => {
+  await db.query(
+    `UPDATE carts SET is_active = 0 WHERE cart_id = ? AND is_active = 1`,
+    [cartId],
+  );
+};
+
+export const createNewActiveCart = async (
+  customerId: number,
+): Promise<number> => {
+  await db.query(
+    `UPDATE carts SET is_active = 0 WHERE customer_id = ? AND is_active = 1`,
+    [customerId],
+  );
+
+  const [result] = await db.query<ResultSetHeader>(
+    `INSERT INTO carts (customer_id, is_active, created_at, updated_at)
+     VALUES (?, 1, NOW(), NOW())`,
+    [customerId],
+  );
+
+  return result.insertId;
 };

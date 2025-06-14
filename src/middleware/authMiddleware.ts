@@ -20,21 +20,24 @@ export const authenticate = async (
 ): Promise<void> => {
   const token = req.cookies.token;
   if (!token) {
-    res.status(401).send("No token provided");
+    res.status(401).json({ message: "No token provided" });
     return;
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
     req.user = decoded;
-    next();
-  } catch (err) {
-    console.error(err);
-    res.status(403).send("Invalid token");
+    return next();
+  } catch (err: any) {
+    console.error("JWT error:", err);
+
+    if (err.name === "TokenExpiredError") {
+      console.warn("Token expired");
+      res.status(401).json({ message: "Token expired" });
+      return;
+    }
+
+    res.status(403).json({ message: "Invalid token" });
     return;
   }
-};
-
-export default {
-  authenticate,
 };

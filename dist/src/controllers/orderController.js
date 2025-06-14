@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllOrders = void 0;
 const orderService_1 = __importDefault(require("../services/orderService"));
+const cartService_1 = require("../services/cartService");
 const getAllOrders = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { order_id, customer_id, status, order_date, total_amount, sortBy, order, } = req.query;
@@ -99,20 +100,51 @@ const deleteOneOrder = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 const handlePaymentConfirm = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        req.session.paymentConfirmed = true;
-        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-        res.setHeader("Pragma", "no-cache");
-        res.setHeader("Expires", "0");
-        res.setHeader("Surrogate-Control", "no-store");
-        req.session.save((err) => {
-            if (err) {
-                console.error("❌ Failed to save session:", err);
-                return res.status(500).send("Session not saved");
-            }
-            console.log("✅ Session saved with:", req.session);
-            res.redirect(`${process.env.CLIENT_URL}/summary`);
+        const customerId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.customer_id;
+        if (typeof customerId !== "number") {
+            res.status(401).send("Unauthorized: missing customer ID");
+            return;
+        }
+        // 1. Get pending order
+        const pendingOrder = yield orderService_1.default.getPendingOrderForCustomer(customerId);
+        if (!pendingOrder) {
+            res.status(404).send("No pending order found to confirm");
+            return;
+        }
+        // 2. Mark order as PAID
+        yield orderService_1.default.updateOneOrder({
+            order_id: pendingOrder.order_id,
+            status: "PAID",
+            order_date: new Date(),
         });
+        // 3. Get active cart
+        const cart = yield (0, cartService_1.getActiveCartMetaByCustomerId)(customerId);
+        if (!cart || !cart.cart_id) {
+            res.status(404).send("No active cart found");
+            return;
+        }
+        // 4. Archive cart items into order_items
+        yield orderService_1.default.archiveCartToOrderItems(pendingOrder.order_id, cart.cart_id);
+        // 5. Clear cart
+        yield (0, cartService_1.clearItemsInCart)(customerId);
+        // 6. Deactivate cart
+        yield (0, cartService_1.deactivateCart)(cart.cart_id);
+        // 7. Fresh cart for customer
+        yield (0, cartService_1.createNewActiveCart)(customerId);
+        // 8. Save session
+        req.session.paymentConfirmed = true;
+        yield new Promise((resolve, reject) => {
+            req.session.save((err) => {
+                if (err)
+                    reject(err);
+                else
+                    resolve();
+            });
+        });
+        console.log("🧠 Final session before redirect:", req.session);
+        res.redirect(`${process.env.CLIENT_URL}/summary`);
     }
     catch (error) {
         console.error("Payment confirmation error:", error);
@@ -121,14 +153,11 @@ const handlePaymentConfirm = (req, res) => __awaiter(void 0, void 0, void 0, fun
 });
 const checkPaymentStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        console.log("🔍 Incoming cookie header:", req.headers.cookie);
-        console.log("🔍 Session object:", req.session);
+        console.log("🔍 /check-payment called");
+        console.log("🍪 Session:", req.session);
         const wasConfirmed = req.session.paymentConfirmed === true;
         if (wasConfirmed) {
-            req.session.paymentConfirmed = false;
-            req.session.save(() => {
-                res.status(200).json({ ok: true });
-            });
+            res.status(200).json({ ok: true });
         }
         else {
             res.status(403).json({ ok: false });
@@ -139,6 +168,73 @@ const checkPaymentStatus = (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(500).send("Session check failed");
     }
 });
+const getLatestPaidOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const customerId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.customer_id;
+        if (!customerId) {
+            res.status(401).send("Unauthorized");
+            return;
+        }
+        const order = yield orderService_1.default.getMostRecentPaidOrderForCustomer(customerId);
+        if (!order)
+            res.status(404).send("No paid order found");
+        res.status(200).json(order);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send("Failed to fetch latest paid order");
+    }
+});
+const resetPaymentConfirmed = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        console.log("🧹 Resetting paymentConfirmed in session");
+        req.session.paymentConfirmed = false;
+        req.session.save((err) => {
+            if (err) {
+                console.error("⚠️ Failed to clear paymentConfirmed:", err);
+                res.status(500).send("Failed to clear flag");
+            }
+            else {
+                console.log("✅ paymentConfirmed manually reset");
+                res.status(200).send("Cleared");
+            }
+        });
+    }
+    catch (err) {
+        console.error("Error clearing session:", err);
+        res.status(500).send("Session error");
+    }
+});
+const getOrderHistory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    console.log("🍪 Session:", req.session);
+    console.log("🧑 User:", req.user);
+    try {
+        const customerId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.customer_id;
+        if (!customerId) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
+        const orders = yield orderService_1.default.getAllPaidOrdersByCustomer(customerId);
+        res.json(orders);
+    }
+    catch (error) {
+        console.error("Failed to get order history:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+const getOrderItems = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { orderId } = req.params;
+    try {
+        const items = yield orderService_1.default.getItemsByOrderId(Number(orderId));
+        res.json(items);
+    }
+    catch (error) {
+        console.error("Error fetching order items:", error);
+        res.status(500).json({ message: "Failed to fetch order items" });
+    }
+});
 exports.default = {
     getAllOrders: exports.getAllOrders,
     getOneOrder,
@@ -147,5 +243,9 @@ exports.default = {
     deleteOneOrder,
     handlePaymentConfirm,
     checkPaymentStatus,
+    getLatestPaidOrder,
+    resetPaymentConfirmed,
+    getOrderHistory,
+    getOrderItems
 };
 //# sourceMappingURL=orderController.js.map

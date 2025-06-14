@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import db from "../database/database";
 
 export const register = async (req: Request, res: Response) => {
@@ -18,19 +18,31 @@ export const register = async (req: Request, res: Response) => {
 
     const newCustomerId = result.insertId;
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { customer_id: newCustomerId },
       process.env.JWT_SECRET!,
-      { expiresIn: "1d" },
+      { expiresIn: "15m" },
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-    });
+    const refreshToken = jwt.sign(
+      { customer_id: newCustomerId },
+      process.env.REFRESH_TOKEN_SECRET!,
+      { expiresIn: "7d" },
+    );
 
-    res.status(201).send({ message: "Registered and logged in" });
+    res
+      .cookie("token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      })
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      })
+      .status(201)
+      .send({ message: "Logged in" });
   } catch (err) {
     console.error(err);
     res.status(500).send("Error registering user");
@@ -60,19 +72,31 @@ export const login = async (
       return;
     }
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { customer_id: customer.customer_id },
       process.env.JWT_SECRET!,
-      { expiresIn: "1d" },
+      { expiresIn: "15m" },
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-    });
+    const refreshToken = jwt.sign(
+      { customer_id: customer.customer_id },
+      process.env.REFRESH_TOKEN_SECRET!,
+      { expiresIn: "7d" },
+    );
 
-    res.send({ message: "Logged in" });
+    res
+      .cookie("token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      })
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      })
+      .status(201)
+      .send({ message: "Logged in" });
   } catch (err) {
     console.error(err);
     next(err);
@@ -88,7 +112,7 @@ export const logout = async (
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
     res.send({ message: "Logged out" });
   } catch (err) {
@@ -119,9 +143,42 @@ export const getMe = async (
   }
 };
 
+export const refreshToken = (req: Request, res: Response): void => {
+  const token = req.cookies.refreshToken;
+  if (!token) {
+    res.status(401).send("No refresh token");
+    return;
+  }
+
+  try {
+    const payload = jwt.verify(
+      token,
+      process.env.REFRESH_TOKEN_SECRET!,
+    ) as JwtPayload;
+
+    const newAccessToken = jwt.sign(
+      { customer_id: payload.customer_id },
+      process.env.JWT_SECRET!,
+      { expiresIn: "15m" },
+    );
+
+    res.cookie("token", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
+
+    res.json({ message: "Token refreshed" });
+  } catch (err) {
+    console.error("Refresh failed", err);
+    res.status(403).send("Invalid refresh token");
+  }
+};
+
 export default {
   register,
   login,
   getMe,
   logout,
+  refreshToken,
 };

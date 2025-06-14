@@ -3,6 +3,13 @@ import orderService from "../services/orderService";
 import { Order } from "../models/Order";
 import session from "express-session";
 
+import {
+  getActiveCartMetaByCustomerId,
+  clearItemsInCart,
+  deactivateCart,
+  createNewActiveCart,
+} from "../services/cartService";
+
 interface OrderParams {
   order_id: number;
 }
@@ -129,25 +136,63 @@ const handlePaymentConfirm = async (
   res: Response,
 ): Promise<void> => {
   try {
-    req.session.paymentConfirmed = true;
+    const customerId = req.user?.customer_id;
 
-    res.setHeader(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate, proxy-revalidate",
-    );
-    res.setHeader("Pragma", "no-cache");
-    res.setHeader("Expires", "0");
-    res.setHeader("Surrogate-Control", "no-store");
+    if (typeof customerId !== "number") {
+      res.status(401).send("Unauthorized: missing customer ID");
+      return;
+    }
 
-    req.session.save((err) => {
-      if (err) {
-        console.error("❌ Failed to save session:", err);
-        return res.status(500).send("Session not saved");
-      }
+    // 1. Get pending order
+    const pendingOrder =
+      await orderService.getPendingOrderForCustomer(customerId);
 
-      console.log("✅ Session saved with:", req.session);
-      res.redirect(`${process.env.CLIENT_URL}/summary`);
+    if (!pendingOrder) {
+      res.status(404).send("No pending order found to confirm");
+      return;
+    }
+
+    // 2. Mark order as PAID
+    await orderService.updateOneOrder({
+      order_id: pendingOrder.order_id,
+      status: "PAID",
+      order_date: new Date(),
     });
+
+    // 3. Get active cart
+    const cart = await getActiveCartMetaByCustomerId(customerId);
+
+    if (!cart || !cart.cart_id) {
+      res.status(404).send("No active cart found");
+      return;
+    }
+
+    // 4. Archive cart items into order_items
+    await orderService.archiveCartToOrderItems(
+      pendingOrder.order_id,
+      cart.cart_id,
+    );
+
+    // 5. Clear cart
+    await clearItemsInCart(customerId);
+
+    // 6. Deactivate cart
+    await deactivateCart(cart.cart_id);
+
+    // 7. Fresh cart for customer
+    await createNewActiveCart(customerId);
+
+    // 8. Save session
+    req.session.paymentConfirmed = true;
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    console.log("🧠 Final session before redirect:", req.session);
+    res.redirect(`${process.env.CLIENT_URL}/summary`);
   } catch (error) {
     console.error("Payment confirmation error:", error);
     res.status(500).send("Failed to confirm payment");
@@ -159,22 +204,93 @@ const checkPaymentStatus = async (
   res: Response,
 ): Promise<void> => {
   try {
-    console.log("🔍 Incoming cookie header:", req.headers.cookie);
-    console.log("🔍 Session object:", req.session);
-
+    console.log("🔍 /check-payment called");
+    console.log("🍪 Session:", req.session);
     const wasConfirmed = req.session.paymentConfirmed === true;
 
     if (wasConfirmed) {
-      req.session.paymentConfirmed = false;
-      req.session.save(() => {
-        res.status(200).json({ ok: true });
-      });
+      res.status(200).json({ ok: true });
     } else {
       res.status(403).json({ ok: false });
     }
   } catch (error) {
     console.error("Error checking payment session:", error);
     res.status(500).send("Session check failed");
+  }
+};
+
+const getLatestPaidOrder = async (
+  req: SessionRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const customerId = req.user?.customer_id;
+    if (!customerId) {
+      res.status(401).send("Unauthorized");
+      return;
+    }
+
+    const order =
+      await orderService.getMostRecentPaidOrderForCustomer(customerId);
+    if (!order) res.status(404).send("No paid order found");
+
+    res.status(200).json(order);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Failed to fetch latest paid order");
+  }
+};
+
+const resetPaymentConfirmed = async (
+  req: SessionRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    console.log("🧹 Resetting paymentConfirmed in session");
+    req.session.paymentConfirmed = false;
+
+    req.session.save((err) => {
+      if (err) {
+        console.error("⚠️ Failed to clear paymentConfirmed:", err);
+        res.status(500).send("Failed to clear flag");
+      } else {
+        console.log("✅ paymentConfirmed manually reset");
+        res.status(200).send("Cleared");
+      }
+    });
+  } catch (err) {
+    console.error("Error clearing session:", err);
+    res.status(500).send("Session error");
+  }
+};
+
+const getOrderHistory = async (req: Request, res: Response): Promise<void> => {
+  console.log("🍪 Session:", req.session);
+  console.log("🧑 User:", req.user);
+
+  try {
+    const customerId = req.user?.customer_id;
+    if (!customerId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const orders = await orderService.getAllPaidOrdersByCustomer(customerId);
+    res.json(orders);
+  } catch (error) {
+    console.error("Failed to get order history:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getOrderItems = async (req: Request, res: Response) => {
+  const { orderId } = req.params;
+  try {
+    const items = await orderService.getItemsByOrderId(Number(orderId));
+    res.json(items);
+  } catch (error) {
+    console.error("Error fetching order items:", error);
+    res.status(500).json({ message: "Failed to fetch order items" });
   }
 };
 
@@ -186,4 +302,8 @@ export default {
   deleteOneOrder,
   handlePaymentConfirm,
   checkPaymentStatus,
+  getLatestPaidOrder,
+  resetPaymentConfirmed,
+  getOrderHistory,
+  getOrderItems,
 };

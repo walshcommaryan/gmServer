@@ -18,7 +18,7 @@ const getCart = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.status(401).json({ message: "Unauthorized" });
     }
     try {
-        const items = yield (0, cartService_1.getCartByCustomerId)(customer_id);
+        const items = yield (0, cartService_1.getCartItemsByCustomerId)(customer_id);
         res.json({ items });
     }
     catch (err) {

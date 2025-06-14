@@ -12,10 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearItemsInCart = exports.removeItemFromCart = exports.mergeCartItem = exports.updateCartItem = exports.getOrCreateActiveCart = exports.getCartByCustomerId = void 0;
+exports.createNewActiveCart = exports.deactivateCart = exports.clearItemsInCart = exports.removeItemFromCart = exports.mergeCartItem = exports.updateCartItem = exports.getOrCreateActiveCart = exports.getActiveCartMetaByCustomerId = exports.getCartItemsByCustomerId = void 0;
 const database_1 = __importDefault(require("../database/database"));
 // Get active cart items for a customer
-const getCartByCustomerId = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
+const getCartItemsByCustomerId = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
     const [rows] = yield database_1.default.query(`SELECT 
       ci.cart_item_id,
       ci.quantity,
@@ -28,7 +28,12 @@ const getCartByCustomerId = (customerId) => __awaiter(void 0, void 0, void 0, fu
     WHERE c.customer_id = ? AND c.is_active = TRUE`, [customerId]);
     return rows;
 });
-exports.getCartByCustomerId = getCartByCustomerId;
+exports.getCartItemsByCustomerId = getCartItemsByCustomerId;
+const getActiveCartMetaByCustomerId = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
+    const [rows] = yield database_1.default.query(`SELECT * FROM carts WHERE customer_id = ? AND is_active = 1 ORDER BY created_at DESC LIMIT 1`, [customerId]);
+    return rows[0] || null;
+});
+exports.getActiveCartMetaByCustomerId = getActiveCartMetaByCustomerId;
 // Ensure an active cart exists, otherwise create one
 const getOrCreateActiveCart = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
     const [existingCart] = yield database_1.default.query("SELECT cart_id FROM carts WHERE customer_id = ? AND is_active = TRUE", [customerId]);
@@ -81,4 +86,17 @@ const clearItemsInCart = (customerId) => __awaiter(void 0, void 0, void 0, funct
     return result.affectedRows > 0;
 });
 exports.clearItemsInCart = clearItemsInCart;
+const deactivateCart = (cartId) => __awaiter(void 0, void 0, void 0, function* () {
+    yield database_1.default.query(`UPDATE carts SET is_active = 0 WHERE cart_id = ? AND is_active = 1`, [cartId]);
+});
+exports.deactivateCart = deactivateCart;
+const createNewActiveCart = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
+    // First, deactivate existing active cart if any
+    yield database_1.default.query(`UPDATE carts SET is_active = 0 WHERE customer_id = ? AND is_active = 1`, [customerId]);
+    // Then insert new cart
+    const [result] = yield database_1.default.query(`INSERT INTO carts (customer_id, is_active, created_at, updated_at)
+     VALUES (?, 1, NOW(), NOW())`, [customerId]);
+    return result.insertId;
+});
+exports.createNewActiveCart = createNewActiveCart;
 //# sourceMappingURL=cartService.js.map
