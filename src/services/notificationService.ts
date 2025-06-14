@@ -29,14 +29,15 @@ const sendEmail = async (data: ContactSubmission): Promise<void> => {
 
   await transporter.sendMail({
     from: `"Contact Form" <${process.env.MAIL_USER}>`,
-    to: data.email,
+    to: process.env.BUSINESS_OWNER_EMAIL,
+    replyTo: data.email,
     subject: `New Contact Form Submission: ${data.subject}`,
     text: `
-        From: ${data.email}
-        Phone: ${data.phone || "N/A"}
-        Message:
-        ${data.message}
-    `,
+    From: ${data.email}
+    Phone: ${data.phone || "N/A"}
+    Message:
+    ${data.message}
+  `,
   });
 };
 
