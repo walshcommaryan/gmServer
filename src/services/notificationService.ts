@@ -209,10 +209,41 @@ const sendIncomingOrderEmail = async (
 };
 
 
+const sendNewUserRegistrationEmail = async ({
+  first_name,
+  last_name,
+  email,
+  phone,
+}: {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+}) => {
+  const businessEmail = process.env.BUSINESS_OWNER_EMAIL || process.env.MAIL_USER;
+  const subject = `New User Registration: ${first_name} ${last_name}`;
+  const text = `
+A new user has registered:
+
+Name: ${first_name} ${last_name}
+Email: ${email}
+Phone: ${phone || "N/A"}
+  `.trim();
+
+  await transporter.sendMail({
+    from: `"GM Petit Cafe" <${process.env.MAIL_USER}>`,
+    to: businessEmail,
+    subject,
+    text,
+  });
+};
+
+
 
 export default {
   saveContactSubmission,
   sendEmail,
   sendOrderSummaryEmail,
   sendIncomingOrderEmail,
+  sendNewUserRegistrationEmail,
 };

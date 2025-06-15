@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import db from "../database/database";
+import notificationService from "../services/notificationService";
 
 export const register = async (req: Request, res: Response) => {
   const { first_name, last_name, email, password, phone } = req.body;
@@ -17,6 +18,14 @@ export const register = async (req: Request, res: Response) => {
     );
 
     const newCustomerId = result.insertId;
+
+    // Send notification to business owner
+    await notificationService.sendNewUserRegistrationEmail({
+      first_name,
+      last_name,
+      email,
+      phone,
+    });
 
     const accessToken = jwt.sign(
       { customer_id: newCustomerId },

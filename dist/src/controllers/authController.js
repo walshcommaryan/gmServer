@@ -16,6 +16,7 @@ exports.refreshToken = exports.getMe = exports.logout = exports.login = exports.
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = __importDefault(require("../database/database"));
+const notificationService_1 = __importDefault(require("../services/notificationService"));
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { first_name, last_name, email, password, phone } = req.body;
     try {
@@ -24,6 +25,13 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // Save the user to the database
         const [result] = yield database_1.default.query("INSERT INTO customers (first_name, last_name, email, phone, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())", [first_name, last_name, email, phoneIfNull, hashed]);
         const newCustomerId = result.insertId;
+        // Send notification to business owner
+        yield notificationService_1.default.sendNewUserRegistrationEmail({
+            first_name,
+            last_name,
+            email,
+            phone,
+        });
         const accessToken = jsonwebtoken_1.default.sign({ customer_id: newCustomerId }, process.env.JWT_SECRET, { expiresIn: "15m" });
         const refreshToken = jsonwebtoken_1.default.sign({ customer_id: newCustomerId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
         res

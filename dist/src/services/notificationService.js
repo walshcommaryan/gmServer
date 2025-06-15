@@ -143,10 +143,28 @@ const sendIncomingOrderEmail = (businessEmail, customerName, orderId, items, tot
         html,
     });
 });
+const sendNewUserRegistrationEmail = (_a) => __awaiter(void 0, [_a], void 0, function* ({ first_name, last_name, email, phone, }) {
+    const businessEmail = process.env.BUSINESS_OWNER_EMAIL || process.env.MAIL_USER;
+    const subject = `New User Registration: ${first_name} ${last_name}`;
+    const text = `
+A new user has registered:
+
+Name: ${first_name} ${last_name}
+Email: ${email}
+Phone: ${phone || "N/A"}
+  `.trim();
+    yield transporter.sendMail({
+        from: `"GM Petit Cafe" <${process.env.MAIL_USER}>`,
+        to: businessEmail,
+        subject,
+        text,
+    });
+});
 exports.default = {
     saveContactSubmission,
     sendEmail,
     sendOrderSummaryEmail,
     sendIncomingOrderEmail,
+    sendNewUserRegistrationEmail,
 };
 //# sourceMappingURL=notificationService.js.map
