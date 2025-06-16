@@ -25,6 +25,7 @@ const redisClient = new Redis({
 const store = new RedisStore({
   client: redisClient,
   prefix: "sess:",
+  ttl: 60 * 10,
 });
 
 // Session config
