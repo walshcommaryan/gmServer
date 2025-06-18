@@ -11,6 +11,8 @@ router.post("/register", authController_1.default.register);
 router.post("/login", authController_1.default.login);
 router.get("/me", authMiddleware_1.authenticate, authController_1.default.getMe);
 router.post("/logout", authController_1.default.logout);
-router.get("/refresh-token", authController_1.default.refreshToken); // Optional
+router.get("/refresh-token", authController_1.default.refreshToken);
+router.post("/forgot-password", authController_1.default.forgotPassword);
+router.post("/reset-password", authController_1.default.resetPassword);
 exports.default = router;
 //# sourceMappingURL=authRoutes.js.map

@@ -12,9 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshToken = exports.getMe = exports.logout = exports.login = exports.register = void 0;
+exports.resetPassword = exports.forgotPassword = exports.refreshToken = exports.getMe = exports.logout = exports.login = exports.register = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const crypto_1 = __importDefault(require("crypto"));
 const database_1 = __importDefault(require("../database/database"));
 const notificationService_1 = __importDefault(require("../services/notificationService"));
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -144,11 +145,67 @@ const refreshToken = (req, res) => {
     }
 };
 exports.refreshToken = refreshToken;
+const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email } = req.body;
+    if (!email) {
+        res.status(400).json({ message: "Email required" });
+        return;
+    }
+    try {
+        const [users] = yield database_1.default.query("SELECT * FROM customers WHERE email = ?", [email]);
+        const user = users[0];
+        if (!user) {
+            res.status(200).json({ message: "If that email exists, a reset link has been sent." });
+            return;
+        }
+        const token = crypto_1.default.randomBytes(32).toString("hex");
+        const expires = new Date(Date.now() + 1000 * 60 * 60).toISOString().slice(0, 19).replace('T', ' ');
+        yield database_1.default.query("UPDATE customers SET reset_password_token = ?, reset_password_expires = ? WHERE customer_id = ?", [token, expires, user.customer_id]);
+        const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+        yield notificationService_1.default.sendPasswordResetEmail({
+            name: `${user.first_name} ${user.last_name}`,
+            email,
+            resetUrl,
+        });
+        res.status(200).json({ message: "If that email exists, a reset link has been sent." });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+exports.forgotPassword = forgotPassword;
+const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, token, newPassword, password } = req.body;
+    const finalPassword = newPassword || password;
+    if (!email || !token || !finalPassword) {
+        res.status(400).json({ message: "Missing fields" });
+        return;
+    }
+    try {
+        const [users] = yield database_1.default.query("SELECT * FROM customers WHERE email = ? AND reset_password_token = ? AND reset_password_expires > NOW()", [email, token]);
+        const user = users[0];
+        if (!user) {
+            res.status(400).json({ message: "Invalid or expired token" });
+            return;
+        }
+        const hashed = yield bcrypt_1.default.hash(finalPassword, 10);
+        yield database_1.default.query("UPDATE customers SET password = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE customer_id = ?", [hashed, user.customer_id]);
+        res.status(200).json({ message: "Password reset successful" });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+exports.resetPassword = resetPassword;
 exports.default = {
     register: exports.register,
     login: exports.login,
     getMe: exports.getMe,
     logout: exports.logout,
     refreshToken: exports.refreshToken,
+    forgotPassword: exports.forgotPassword,
+    resetPassword: exports.resetPassword,
 };
 //# sourceMappingURL=authController.js.map

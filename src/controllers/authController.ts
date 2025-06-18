@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import crypto from "crypto";
 import db from "../database/database";
 import notificationService from "../services/notificationService";
 
@@ -184,10 +185,81 @@ export const refreshToken = (req: Request, res: Response): void => {
   }
 };
 
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ message: "Email required" });
+    return;
+  }
+
+  try {
+    const [users]: any = await db.query("SELECT * FROM customers WHERE email = ?", [email]);
+    const user = users[0];
+    if (!user) {
+      res.status(200).json({ message: "If that email exists, a reset link has been sent." });
+      return;
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 1000 * 60 * 60).toISOString().slice(0, 19).replace('T', ' ');
+
+    await db.query(
+      "UPDATE customers SET reset_password_token = ?, reset_password_expires = ? WHERE customer_id = ?",
+      [token, expires, user.customer_id]
+    );
+
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+    await notificationService.sendPasswordResetEmail({
+      name: `${user.first_name} ${user.last_name}`,
+      email,
+      resetUrl,
+    });
+
+    res.status(200).json({ message: "If that email exists, a reset link has been sent." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  const { email, token, newPassword, password } = req.body;
+  const finalPassword = newPassword || password;
+  if (!email || !token || !finalPassword) {
+    res.status(400).json({ message: "Missing fields" });
+    return;
+  }
+
+  try {
+    const [users]: any = await db.query(
+      "SELECT * FROM customers WHERE email = ? AND reset_password_token = ? AND reset_password_expires > NOW()",
+      [email, token]
+    );
+    const user = users[0];
+    if (!user) {
+      res.status(400).json({ message: "Invalid or expired token" });
+      return;
+    }
+
+    const hashed = await bcrypt.hash(finalPassword, 10);
+    await db.query(
+      "UPDATE customers SET password = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE customer_id = ?",
+      [hashed, user.customer_id]
+    );
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 export default {
   register,
   login,
   getMe,
   logout,
   refreshToken,
+  forgotPassword,
+  resetPassword,
 };

@@ -160,11 +160,35 @@ Phone: ${phone || "N/A"}
         text,
     });
 });
+const sendPasswordResetEmail = (_a) => __awaiter(void 0, [_a], void 0, function* ({ name, email, resetUrl, }) {
+    const html = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f9f6f2; padding: 32px;">
+      <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px;">
+        <h2 style="color: #8b4513; margin-top: 0;">Reset Your Password</h2>
+        <p>Hi ${name},</p>
+        <p>We received a request to reset your password. Click the button below to set a new password:</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${resetUrl}" style="background: #8b4513; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 5px; font-size: 16px; display: inline-block;">Reset Password</a>
+        </div>
+        <p style="color: #888; font-size: 13px;">If you did not request this, you can safely ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0 16px 0;">
+        <p style="font-size: 12px; color: #aaa; text-align: center;">GM Petit Café</p>
+      </div>
+    </div>
+  `.trim();
+    yield transporter.sendMail({
+        from: `"GM Petit Cafe" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: "Reset Your Password",
+        html,
+    });
+});
 exports.default = {
     saveContactSubmission,
     sendEmail,
     sendOrderSummaryEmail,
     sendIncomingOrderEmail,
     sendNewUserRegistrationEmail,
+    sendPasswordResetEmail,
 };
 //# sourceMappingURL=notificationService.js.map

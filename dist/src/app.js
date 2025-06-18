@@ -27,6 +27,7 @@ const redisClient = new ioredis_1.default({
 const store = new connect_redis_1.RedisStore({
     client: redisClient,
     prefix: "sess:",
+    ttl: 60 * 10,
 });
 // Session config
 exports.app.use((0, express_session_1.default)({
