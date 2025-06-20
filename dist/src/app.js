@@ -16,14 +16,20 @@ exports.app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || "3000", 10);
 exports.app.set("trust proxy", 1);
 // Redis setup
-const redisClient = new ioredis_1.default({
+const redisOptions = {
     host: process.env.REDIS_HOST,
-    port: 6379,
-    tls: {
+    port: Number(process.env.REDIS_PORT) || 6379,
+};
+if (process.env.REDIS_PASSWORD) {
+    redisOptions.password = process.env.REDIS_PASSWORD;
+}
+if (process.env.NODE_ENV === "production") {
+    redisOptions.tls = {
         rejectUnauthorized: false,
-        servername: process.env.REDIS_SERVER,
-    },
-});
+        servername: process.env.REDIS_HOST,
+    };
+}
+const redisClient = new ioredis_1.default(redisOptions);
 const store = new connect_redis_1.RedisStore({
     client: redisClient,
     prefix: "sess:",

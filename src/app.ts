@@ -5,7 +5,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import Redis from "ioredis";
+import Redis, { RedisOptions } from "ioredis";
 import { RedisStore } from "connect-redis";
 
 export const app = express();
@@ -13,14 +13,24 @@ const PORT = parseInt(process.env.PORT || "3000", 10);
 app.set("trust proxy", 1);
 
 // Redis setup
-const redisClient = new Redis({
+const redisOptions: RedisOptions = {
   host: process.env.REDIS_HOST,
-  port: 6379,
-  tls: {
+  port: Number(process.env.REDIS_PORT) || 6379,
+};
+
+if (process.env.REDIS_PASSWORD) {
+  redisOptions.password = process.env.REDIS_PASSWORD;
+}
+
+if (process.env.NODE_ENV === "production") {
+  redisOptions.tls = {
     rejectUnauthorized: false,
-    servername: process.env.REDIS_SERVER,
-  },
-});
+    servername: process.env.REDIS_HOST,
+  };
+}
+
+const redisClient = new Redis(redisOptions);
+
 
 const store = new RedisStore({
   client: redisClient,
