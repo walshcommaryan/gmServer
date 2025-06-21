@@ -5,7 +5,7 @@ const sendEmail = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, phone, subject, message } = req.body;
 
-    if (!name || !email || !subject || !message) {
+    if (!name || !email || !message) {
       res.status(400).json({ message: "Required fields missing" });
       return;
     }

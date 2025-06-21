@@ -5,7 +5,7 @@ type ContactSubmission = {
   name: string;
   email: string;
   phone?: string;
-  subject: string;
+  subject?: string;
   message: string;
 };
 
@@ -35,7 +35,9 @@ const sendEmail = async (data: ContactSubmission): Promise<void> => {
   await transporter.sendMail({
     from: `"${data.name}" <${process.env.MAIL_USER}>`,
     to: process.env.BUSINESS_OWNER_EMAIL || process.env.MAIL_USER,
-    subject: `New Contact Form Submission: ${data.subject}`,
+    subject: data.subject
+      ? `New Contact Form Submission: ${data.subject}`
+      : "New Contact Form Submission",
     text: `
         From: ${data.name} <${data.email}>
         Phone: ${data.phone || "N/A"}
