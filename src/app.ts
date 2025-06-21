@@ -22,7 +22,8 @@ if (process.env.REDIS_PASSWORD) {
   redisOptions.password = process.env.REDIS_PASSWORD;
 }
 
-if (process.env.NODE_ENV === "production") {
+// Only enable TLS if REDIS_USE_TLS=true
+if (process.env.REDIS_USE_TLS === "true") {
   redisOptions.tls = {
     rejectUnauthorized: false,
     servername: process.env.REDIS_HOST,
