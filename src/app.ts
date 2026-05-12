@@ -57,6 +57,16 @@ app.use(
 );
 
 // CORS
+const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const productionAllowedOrigins =
+  corsAllowedOrigins.length > 0
+    ? corsAllowedOrigins
+    : ["https://www.gmpetitcafe.com", "https://gmpetitcafe.com"];
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -65,12 +75,7 @@ app.use(
         return callback(null, true);
       }
 
-      const allowedOrigins = [
-        "https://www.gmpetitcafe.com",
-        "https://gmpetitcafe.com",
-      ];
-
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || productionAllowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
