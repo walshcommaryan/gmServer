@@ -10,89 +10,6 @@ interface CartItemRow extends RowDataPacket {
 
 type OrderRow = Order & RowDataPacket;
 
-interface Filters {
-  order_id?: number;
-  customer_id?: number;
-  status?: string;
-  order_date?: string;
-  total_amount?: number;
-  location?: string;
-  pickup_date?: string;
-}
-
-interface SortOptions {
-  sortBy?: string;
-  order: "asc" | "desc";
-}
-
-const ALLOWED_SORT_FIELDS = [
-  "order_date",
-  "total_amount",
-  "status",
-  "customer_id",
-  "location",
-  "pickup_date",
-];
-
-export const getAllOrders = async (
-  filters: Filters,
-  sortOptions: SortOptions,
-): Promise<Order[]> => {
-  let query = "SELECT * FROM orders";
-  const params: any[] = [];
-  const conditions: string[] = [];
-
-  if (filters.order_id !== undefined) {
-    conditions.push("order_id = ?");
-    params.push(filters.order_id);
-  }
-
-  if (filters.customer_id !== undefined) {
-    conditions.push("customer_id = ?");
-    params.push(filters.customer_id);
-  }
-
-  if (filters.status) {
-    conditions.push("status = ?");
-    params.push(filters.status);
-  }
-
-  if (filters.order_date) {
-    conditions.push("DATE(order_date) = ?");
-    params.push(filters.order_date);
-  }
-
-  if (filters.total_amount !== undefined) {
-    conditions.push("total_amount = ?");
-    params.push(filters.total_amount);
-  }
-
-  if (filters.location) {
-    conditions.push("location = ?");
-    params.push(filters.location);
-  }
-
-  if (filters.pickup_date) {
-    conditions.push("DATE(pickup_date) = ?");
-    params.push(filters.pickup_date);
-  }
-
-  if (conditions.length > 0) {
-    query += " WHERE " + conditions.join(" AND ");
-  }
-
-  if (
-    filters &&
-    sortOptions.sortBy &&
-    ALLOWED_SORT_FIELDS.includes(sortOptions.sortBy)
-  ) {
-    query += ` ORDER BY ${sortOptions.sortBy} ${sortOptions.order.toUpperCase()}`;
-  }
-
-  const [rows] = await db.query<OrderRow[]>(query, params);
-  return rows;
-};
-
 const getOneOrder = async (orderId: number): Promise<Order | undefined> => {
   if (typeof orderId !== "number" || isNaN(orderId)) {
     console.error("❌ getOneOrder: Invalid order_id:", orderId);
@@ -164,14 +81,6 @@ const updateOneOrder = async (
   if (result.affectedRows === 0) {
     console.warn(`⚠️ updateOneOrder: No rows affected for order_id ${orderId}`);
   }
-};
-
-const deleteOneOrder = async (order_id: number): Promise<ResultSetHeader> => {
-  const [result] = await db.query<ResultSetHeader>(
-    "DELETE FROM orders WHERE order_id = ?",
-    [order_id],
-  );
-  return result;
 };
 
 const getPendingOrderForCustomer = async (customerId: number) => {
@@ -247,11 +156,9 @@ const getItemsByOrderId = async (orderId: number) => {
 };
 
 export default {
-  getAllOrders,
   getOneOrder,
   createOneOrder,
   updateOneOrder,
-  deleteOneOrder,
   getPendingOrderForCustomer,
   getMostRecentPaidOrderForCustomer,
   getAllPaidOrdersByCustomer,

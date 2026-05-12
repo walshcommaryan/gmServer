@@ -119,11 +119,16 @@ export const logout = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    res.clearCookie("token", {
+    const cookieOpts = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    });
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? ("none" as const)
+          : ("lax" as const),
+    };
+    res.clearCookie("token", cookieOpts);
+    res.clearCookie("refreshToken", cookieOpts);
     res.send({ message: "Logged out" });
   } catch (err) {
     console.error(err);
