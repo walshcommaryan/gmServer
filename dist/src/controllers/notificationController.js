@@ -16,7 +16,7 @@ const notificationService_1 = __importDefault(require("../services/notificationS
 const sendEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { name, email, phone, subject, message } = req.body;
-        if (!name || !email || !subject || !message) {
+        if (!name || !email || !message) {
             res.status(400).json({ message: "Required fields missing" });
             return;
         }

@@ -32,7 +32,9 @@ const sendEmail = (data) => __awaiter(void 0, void 0, void 0, function* () {
     yield transporter.sendMail({
         from: `"${data.name}" <${process.env.MAIL_USER}>`,
         to: process.env.BUSINESS_OWNER_EMAIL || process.env.MAIL_USER,
-        subject: `New Contact Form Submission: ${data.subject}`,
+        subject: data.subject
+            ? `New Contact Form Submission: ${data.subject}`
+            : "New Contact Form Submission",
         text: `
         From: ${data.name} <${data.email}>
         Phone: ${data.phone || "N/A"}
